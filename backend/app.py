@@ -8,7 +8,7 @@ CORS(app)
 
 DB = "logs.db"
 
-# Create DB
+# Initialize DB
 def init_db():
     conn = sqlite3.connect(DB)
     cur = conn.cursor()
@@ -37,19 +37,21 @@ def add_log():
 
     conn = sqlite3.connect(DB)
     cur = conn.cursor()
-    cur.execute("INSERT INTO logs(username, ip, status) VALUES(?,?,?)",
-                (data["username"], data["ip"], data["status"]))
+    cur.execute(
+        "INSERT INTO logs(username, ip, status) VALUES(?,?,?)",
+        (data["username"], data["ip"], data["status"])
+    )
     conn.commit()
     conn.close()
 
-    return {"message": "log added"}
+    return jsonify({"message": "Log added successfully"})
 
 # Get logs
-@app.route("/logs")
-def logs():
+@app.route("/logs", methods=["GET"])
+def get_logs():
     conn = sqlite3.connect(DB)
     cur = conn.cursor()
-    cur.execute("SELECT * FROM logs")
+    cur.execute("SELECT * FROM logs ORDER BY time DESC")
     rows = cur.fetchall()
     conn.close()
 
@@ -63,10 +65,10 @@ def logs():
             "time": r[4]
         })
 
-    return {"logs": logs}
+    return jsonify({"logs": logs})
 
 # Analyze logs
-@app.route("/analyze")
+@app.route("/analyze", methods=["GET"])
 def analyze():
     conn = sqlite3.connect(DB)
     cur = conn.cursor()
@@ -90,18 +92,19 @@ def analyze():
 
     conn.close()
 
-    return {
+    return jsonify({
         "total_logs": total,
         "failed_attempts": failed,
         "successful_attempts": success,
         "suspicious_ips": suspicious
-    }
+    })
 
-# UI
+# Serve UI
 @app.route("/ui")
 def ui():
     return send_file("../frontend/index.html")
 
+# Run app
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
