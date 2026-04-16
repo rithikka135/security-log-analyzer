@@ -33,18 +33,26 @@ def home():
 # Add log
 @app.route("/log", methods=["POST"])
 def add_log():
-    data = request.json
+    try:
+        data = request.get_json()
 
-    conn = sqlite3.connect(DB)
-    cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO logs(username, ip, status) VALUES(?,?,?)",
-        (data["username"], data["ip"], data["status"])
-    )
-    conn.commit()
-    conn.close()
+        username = data.get("username")
+        ip = data.get("ip")
+        status = data.get("status")
 
-    return jsonify({"message": "Log added successfully"})
+        conn = sqlite3.connect(DB)
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO logs(username, ip, status) VALUES(?,?,?)",
+            (username, ip, status)
+        )
+        conn.commit()
+        conn.close()
+
+        return jsonify({"message": "Log added successfully"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Get logs
 @app.route("/logs", methods=["GET"])
@@ -104,7 +112,7 @@ def analyze():
 def ui():
     return send_file("../frontend/index.html")
 
-# Run app
+# Run
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
