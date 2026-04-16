@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Security Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<h1>🔐 Security Dashboard</h1>
+
+<h2>Add Log</h2>
+<input id="user" placeholder="Username">
+<input id="ip" placeholder="IP">
+<select id="status">
+  <option>success</option>
+  <option>failed</option>
+</select>
+<button onclick="addLog()">Submit</button>
+
+<h2>Logs</h2>
+<pre id="logs"></pre>
+
+<h2>📊 Analysis</h2>
+<button onclick="analyze()">Analyze</button>
+
+<canvas id="chart" width="400" height="200"></canvas>
+
+<h3>🚨 Suspicious IPs</h3>
+<pre id="ips"></pre>
+
+<script>
+let chart;
+
+async function addLog(){
+  await fetch('/log',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      username:user.value,
+      ip:ip.value,
+      status:status.value
+    })
+  });
+  loadLogs();
+}
+
+async function loadLogs(){
+  const res=await fetch('/logs');
+  const data=await res.json();
+  logs.innerText=JSON.stringify(data,null,2);
+}
+
+async function analyze(){
+  const res=await fetch('/analyze');
+  const data=await res.json();
+
+  if(chart) chart.destroy();
+
+  chart = new Chart(document.getElementById('chart'), {
+    type: 'bar',
+    data: {
+      labels: ['Failed', 'Success'],
+      datasets: [{
+        label: 'Logs',
+        data: [data.failed_attempts, data.successful_attempts]
+      }]
+    }
+  });
+
+  ips.innerText = JSON.stringify(data.suspicious_ips, null, 2);
+}
+
+loadLogs();
+</script>
+
+</body>
+</html>
